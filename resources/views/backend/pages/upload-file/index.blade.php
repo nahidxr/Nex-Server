@@ -1,25 +1,25 @@
+
 @extends('backend.layouts.master')
 
 @section('title')
-    Upload File - Admin Panel
+Role Page - Admin Panel
 @endsection
 
 @section('styles')
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
 @endsection
+
 
 @section('admin-content')
 
-<!-- Page title area start -->
+<!-- page title area start -->
 <div class="page-title-area">
     <div class="row align-items-center">
         <div class="col-sm-6">
             <div class="breadcrumbs-area clearfix">
-                <h4 class="page-title pull-left">File Upload</h4>
+                <h4 class="page-title pull-left">Roles</h4>
                 <ul class="breadcrumbs pull-left">
                     <li><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-                    <li><span>Upload File</span></li>
+                    <li><span>All Roles</span></li>
                 </ul>
             </div>
         </div>
@@ -28,11 +28,11 @@
         </div>
     </div>
 </div>
-<!-- Page title area end -->
+<!-- page title area end -->
 
-<!-- File Upload Area -->
-{{-- <div class="container pt-4"> --}}
+<div class="main-content-inner">
     <div class="row justify-content-center">
+
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header text-center">
@@ -54,80 +54,82 @@
                 </div>
             </div>
         </div>
-    </div>
-{{-- </div> --}}
-<!-- End of File Upload Area -->
 
+
+
+    </div>
+</div>
 @endsection
 
+
 @section('scripts')
-    <!-- Include required scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/resumable.js/1.1.0/resumable.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+ <!-- Include required scripts -->
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/resumable.js/1.1.0/resumable.min.js"></script>
+ <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 
-    <script type="text/javascript">
-        let browseFile = $('#browseFile');
-        let resumable = new Resumable({
-            target: '{{ route('upload.store') }}',
-            query: {_token: '{{ csrf_token() }}'},
-            fileType: ['png', 'jpg', 'jpeg', 'mp4'],
-            chunkSize: 10 * 1024 * 1024, // Adjust chunk size based on server limit
-            headers: {
-                'Accept': 'application/json'
-            },
-            testChunks: false,
-            throttleProgressCallbacks: 1,
-        });
+ <script type="text/javascript">
+     let browseFile = $('#browseFile');
+     let resumable = new Resumable({
+         target: '{{ route('upload.store') }}',
+         query: {_token: '{{ csrf_token() }}'},
+         fileType: ['png', 'jpg', 'jpeg', 'mp4'],
+         chunkSize: 10 * 1024 * 1024, // Adjust chunk size based on server limit
+         headers: {
+             'Accept': 'application/json'
+         },
+         testChunks: false,
+         throttleProgressCallbacks: 1,
+     });
 
-        resumable.assignBrowse(browseFile[0]);
+     resumable.assignBrowse(browseFile[0]);
 
-        resumable.on('fileAdded', function (file) {
-            showProgress();
-            resumable.upload();
-        });
+     resumable.on('fileAdded', function (file) {
+         showProgress();
+         resumable.upload();
+     });
 
-        resumable.on('fileProgress', function (file) {
-            updateProgress(Math.floor(file.progress() * 100));
-        });
+     resumable.on('fileProgress', function (file) {
+         updateProgress(Math.floor(file.progress() * 100));
+     });
 
-        resumable.on('fileSuccess', function (file, response) {
-            response = JSON.parse(response);
+     resumable.on('fileSuccess', function (file, response) {
+         response = JSON.parse(response);
 
-            if (response.mime_type.includes("image")) {
-                $('#imagePreview').attr('src', response.path + '/' + response.name).show();
-            }
+         if (response.mime_type.includes("image")) {
+             $('#imagePreview').attr('src', response.path + '/' + response.name).show();
+         }
 
-            if (response.mime_type.includes("video")) {
-                $('#videoPreview').attr('src', response.path + '/' + response.name).show();
-            }
+         if (response.mime_type.includes("video")) {
+             $('#videoPreview').attr('src', response.path + '/' + response.name).show();
+         }
 
-            $('.card-footer').show();
-        });
+         $('.card-footer').show();
+     });
 
-        resumable.on('fileError', function (file, response) {
-            alert('file uploading error.');
-        });
+     resumable.on('fileError', function (file, response) {
+         alert('file uploading error.');
+     });
 
-        let progress = $('.progress');
+     let progress = $('.progress');
 
-        function showProgress() {
-            progress.find('.progress-bar').css('width', '0%');
-            progress.find('.progress-bar').html('0%');
-            progress.find('.progress-bar').removeClass('bg-success');
-            progress.show();
-        }
+     function showProgress() {
+         progress.find('.progress-bar').css('width', '0%');
+         progress.find('.progress-bar').html('0%');
+         progress.find('.progress-bar').removeClass('bg-success');
+         progress.show();
+     }
 
-        function updateProgress(value) {
-            progress.find('.progress-bar').css('width', `${value}%`);
-            progress.find('.progress-bar').html(`${value}%`);
+     function updateProgress(value) {
+         progress.find('.progress-bar').css('width', `${value}%`);
+         progress.find('.progress-bar').html(`${value}%`);
 
-            if (value === 100) {
-                progress.find('.progress-bar').addClass('bg-success');
-            }
-        }
+         if (value === 100) {
+             progress.find('.progress-bar').addClass('bg-success');
+         }
+     }
 
-        function hideProgress() {
-            progress.hide();
-        }
-    </script>
+     function hideProgress() {
+         progress.hide();
+     }
+ </script>
 @endsection
