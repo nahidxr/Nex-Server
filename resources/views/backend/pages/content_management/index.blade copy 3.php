@@ -132,23 +132,12 @@ Admins - Admin Panel
 
                         <!-- Video preview (initially hidden) -->
                         <video id="videoPreview" controls style="display: none; width: 100%; height: auto; margin-top: 10px;"></video>
-
-                        <!-- Spinner for loading state (initially hidden) -->
-                        <div id="spinner" class="spinner-border text-primary" role="status" style="display: none;">
-                            <span class="sr-only">Loading...</span>
-                        </div>
                     </div>
 
                     <!-- Progress bar (initially hidden) -->
-                    <div id="progress-content" class="upload-progress-content">
-                        <!-- Label changes to "Uploading..." when the upload starts -->
-                        <label class="uploading-label" id="uploadingLabel" style="display: none;">Uploading...</label>
-                        
-                        <!-- Progress bar, shown while the video is uploading -->
-                        <div class="progress mt-3" id="progressBarContainer" style="display: none;">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
-                                 aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">0%
-                            </div>
+                    <div class="progress mt-3" id="progressBarContainer" style="display: none; height: 25px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                             aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%; height: 100%">0%
                         </div>
                     </div>
                 </form>
@@ -213,21 +202,13 @@ Admins - Admin Panel
         width: 100%;
         height: auto;
         border-radius: 8px;
-        margin-top: 10px;
     }
 
     .progress-bar-container-inside {
         margin-top: 10px;
         width: 100%;
     }
-
-    /* Spinner styles */
-    .spinner-border {
-        margin-top: 15px;
-        display: block; /* Display block to center spinner */
-    }
 </style>
-
 @endsection
 
 @section('scripts')
@@ -250,92 +231,95 @@ Admins - Admin Panel
        }
 
        $(document).ready(function () {
-            let browseFile = $('#file-upload');
-            let progressBarContainer = $('#progressBarContainer');
-            let progressBar = $('.progress-bar');
-            let videoPreview = $('#videoPreview');
-            let uploadText = $('#uploadText');
-            let browseFileButton = $('#browseFileButton');
-            let uploadContainer = $('#upload-container');
-            let spinner = $('#spinner');
-            let uploadingLabel = $('#uploadingLabel');
+        let browseFile = $('#file-upload');
+let progressBarContainer = $('#progressBarContainer');
+let progressBar = $('.progress-bar');
+let videoPreview = $('#videoPreview');
+let uploadText = $('#uploadText');
+let browseFileButton = $('#browseFileButton');
+let uploadContainer = $('#upload-container');
 
-            let resumable = new Resumable({
-                target: '{{ route("upload.store") }}',
-                query: {_token: '{{ csrf_token() }}'},
-                fileType: ['png', 'jpg', 'jpeg', 'mp4'],
-                chunkSize: 10 * 1024 * 1024, // Adjust chunk size based on server limit
-                headers: {
-                    'Accept': 'application/json'
-                },
-                testChunks: false,
-                throttleProgressCallbacks: 1,
-            });
+let resumable = new Resumable({
+    target: '{{ route("upload.store") }}',
+    query: {_token: '{{ csrf_token() }}'},
+    fileType: ['png', 'jpg', 'jpeg', 'mp4'],
+    chunkSize: 10 * 1024 * 1024, // Adjust chunk size based on server limit
+    headers: {
+        'Accept': 'application/json'
+    },
+    testChunks: false,
+    throttleProgressCallbacks: 1,
+});
 
-            resumable.assignBrowse(browseFile[0]);
+resumable.assignBrowse(browseFile[0]);
 
-            resumable.on('fileAdded', function (file) {
-                uploadContainer.addClass('active-upload');
-                uploadText.hide();
-                browseFileButton.hide();
-                progressBarContainer.addClass('progress-bar-container-inside').show();
-                uploadingLabel.show().text('Uploading...'); // Show uploading label
-                spinner.show(); // Show the spinner
-                resumable.upload();
-            });
+resumable.on('fileAdded', function (file) {
+    // Change the container design when the upload starts
+    uploadContainer.addClass('active-upload');
+    
+    // Hide the browse button and show the progress bar
+    uploadText.hide();
+    browseFileButton.hide();
+    progressBarContainer.addClass('progress-bar-container-inside').show();
+    
+    // Start uploading
+    resumable.upload();
+});
 
-            resumable.on('fileProgress', function (file) {
-                let progress = Math.floor(file.progress() * 100);
-                progressBar.css('width', `${progress}%`);
-                progressBar.text(`${progress}%`);
-            });
+resumable.on('fileProgress', function (file) {
+    // Update progress bar
+    let progress = Math.floor(file.progress() * 100);
+    progressBar.css('width', `${progress}%`);
+    progressBar.text(`${progress}%`);
+});
 
-            resumable.on('fileSuccess', function (file, response) {
-                response = JSON.parse(response);
-                if (response.mime_type.includes("video")) {
-                    progressBarContainer.hide();
-                    videoPreview.attr('src', response.path + '/' + response.name).show();
-                    spinner.hide(); // Hide the spinner when upload is complete
-                    uploadingLabel.hide(); // Hide the uploading label
-                    uploadContainer.css('border', 'none'); // Remove border after upload
-                }
-            });
+resumable.on('fileSuccess', function (file, response) {
+    // Parse the response
+    response = JSON.parse(response);
 
-            resumable.on('fileError', function (file, response) {
-                alert('File upload error.');
-                resetUploadContainer();
-            });
+    // Check if the uploaded file is a video
+    if (response.mime_type.includes("video")) {
+        // Hide the progress bar and show the video preview in full width inside the container
+        progressBarContainer.hide();
+        videoPreview.attr('src', response.path + '/' + response.name).show();
+    }
+});
 
-            function resetUploadContainer() {
-                uploadContainer.removeClass('active-upload');
-                progressBarContainer.removeClass('progress-bar-container-inside').hide();
-                videoPreview.hide();
-                browseFileButton.show();
-                uploadText.show();
-                progressBar.css('width', '0%').text('0%');
-                spinner.hide(); // Hide spinner on reset
-                uploadingLabel.hide(); // Hide uploading label on reset
-                uploadContainer.css('border', '2px dashed #2a5078'); // Reset border to dashed
-            }
+resumable.on('fileError', function (file, response) {
+    alert('File upload error.');
+    resetUploadContainer();
+});
 
-            uploadContainer.on('dragover', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                uploadContainer.css('border', '2px solid #1d3557');
-            });
+function resetUploadContainer() {
+    // Reset to the initial state
+    uploadContainer.removeClass('active-upload');
+    progressBarContainer.removeClass('progress-bar-container-inside').hide();
+    videoPreview.hide();
+    browseFileButton.show();
+    uploadText.show();
+    progressBar.css('width', '0%').text('0%');
+}
 
-            uploadContainer.on('dragleave', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                uploadContainer.css('border', '2px dashed #2a5078');
-            });
+// Enable drag-and-drop functionality
+uploadContainer.on('dragover', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    uploadContainer.css('border', '2px solid #1d3557');
+});
 
-            uploadContainer.on('drop', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                resumable.assignDrop(e.originalEvent.dataTransfer.files);
-            });
-        });
+uploadContainer.on('dragleave', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    uploadContainer.css('border', '2px dashed #2a5078');
+});
+
+uploadContainer.on('drop', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    resumable.assignDrop(e.originalEvent.dataTransfer.files);
+});
+
+});
 
     </script>
 @endsection
